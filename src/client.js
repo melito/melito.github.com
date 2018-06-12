@@ -11,11 +11,12 @@ var routes = {
 
 /**
  * App - Main 'App' Object
- *
+ * @param  {Object} dom Defaults to `document` if not provided.  Allows for mocking/stubbing
  * @return {Object}  New 'App' with default state (empty result set)
  */
 function App(dom) {
-  this.state = { results: null, current_page: null }
+  this.state           = { results: null, current_page: null, current_request: null }
+  this.default_timeout = 500
   if (typeof dom !== 'undefined') { this.dom = dom }
   else { this.dom = document }
 }
@@ -27,13 +28,33 @@ function App(dom) {
  */
 App.prototype.search = function(query) {
   var url    = url_for('search', {q: query, client_id: client_id, callback: 'window.jitters._fetched'})
-  var skript = document.createElement('script')
-  skript.src = url
-  document.body.appendChild(skript)
+  this._fetch(url)
 }
 
 /**
- * App.prototype.fetched - Used by the JSONP callback whenever a remote resource is loaded
+ * App.prototype._fetch - Used to make JSONP requests.
+ *                        Works by creating a script element and appending it to the dom.
+ *                        Mutates requests array for in flight tracking.
+ *
+ * @param  {String} url JSONP endpoint you would like to request data from
+ */
+App.prototype._fetch = function(url) {
+  var skript        = this.dom.createElement('script')
+  skript.src        = url
+  skript.id         = string_to_hash(url)
+  skript.className  = 'jsonp_request'
+  this.dom.body.appendChild(skript)
+  this.requests[skript.id] =  {complete: false}
+
+  var hi = this
+  setTimeout(function() {
+    this.error = 'Could not connect to api'
+    console.log(hi.requests.filter(function(x) { return x === skript.id }))
+  }, this.default_timeout)
+}
+
+/**
+ * App.prototype._fetched - Used by the JSONP callback whenever a remote resource is loaded
  *
  * @param  {Object} data Results from the API. (https://dev.twitch.tv/docs/v5/reference/search/#search-streams)
  */
@@ -51,20 +72,24 @@ App.prototype._fetched = function(data) {
  *
  */
 App.prototype._updateUI = function(results) {
-  addTotalCount(results)
-  addPagingControls(results, this.state.current_page)
-  document.getElementById('results').innerHTML = results.streams.map(_build_result).join('')
+  addTotalCount(this.dom, results)
+  addPagingControls(this.dom, results, this.state.current_page)
+  addResults(this.dom, results)
 }
 
-var addTotalCount = function(results) {
-  document.getElementById('results-controls').innerHTML = `<span class='total-results'>Total ${results._total}</span>`
+var addTotalCount = function(dom, results) {
+  dom.getElementById('results-controls').innerHTML = `<span class='total-results'>Total: ${results._total}</span>`
 }
 
-var addPagingControls = function(results, current_page) {
+var addPagingControls = function(dom, results, current_page) {
   var node        = document.createElement("span")
   node.className  = 'paging-controls'
   node.innerHTML  = `${buildPageLink('prev')} ${current_page}/${page_count(results._total)} ${buildPageLink('next')}`
-  document.getElementById('results-controls').appendChild(node)
+  dom.getElementById('results-controls').appendChild(node)
+}
+
+var addResults = function(dom, results) {
+  dom.getElementById('results').innerHTML = results.streams.map(build_result).join('')
 }
 
 var buildPageLink = function(direction, link) {
@@ -118,12 +143,12 @@ var image_url = function(stream) {
 
 
 /**
- * _build_result - This will build an html slug for use in populating a result set
+ * build_result - This will build an html slug for use in populating a result set
  *
  * @param  {Object} stream Object representing a stream.
  * @return {String}        HTML partial with populated fields
  */
-var _build_result = function(stream) {
+var build_result = function(stream) {
   var template =
   `<div class="result">
     <img class='stream-img' src="${image_url(stream)}"/><h1>${stream.game}</h1>
@@ -150,12 +175,12 @@ function UrlBuilder(query_type, params) {
 }
 
 /**
- * ParamsToString - Converts a dictionary to query params usable with a url
+ * params_to_string - Converts a dictionary to query params usable with a url
  *
  * @param  {Object} dict Dictionary containing the key/values to be used as params
  * @return {String} A string representing the params
  */
-function ParamsToString(dict) {
+var params_to_string = function(dict) {
   return Object.entries(dict).map(function(kv){
     return kv.map(encodeURIComponent).join('=')
   }).join('&')
@@ -169,9 +194,28 @@ function ParamsToString(dict) {
 UrlBuilder.prototype.build = function() {
   var url = `${this.proto}://${this.host}/${this.path}`
   if (this.params) {
-    url = `${url}?${ParamsToString(this.params)}`
+    url = `${url}?${params_to_string(this.params)}`
   }
   return url
+}
+
+
+/**
+ * var string_to_hash - Poorman's string hash.  Used to create a finger print for strings we can use for keying jsonp requests/state
+ *
+ * @param  {String} str A string with some type of information in it
+ * @return {String}     A hash of the string that was input
+ */
+var string_to_hash = function(str) {
+  var hash = 0
+  if (str.length <= 0) { return hash }
+
+  for (var i = 0; i < str.length; i++) {
+    var char = str.charCodeAt(i)
+    hash = (hash<<5)-char
+    hash = hash + hash
+  }
+  return hash.toString()
 }
 
 /// Make available to the test harness
@@ -179,7 +223,8 @@ module.exports = {
   App: App,
   url_for: url_for,
   image_url: image_url,
-  page_count: page_count
+  page_count: page_count,
+  string_to_hash: string_to_hash
 }
 
 /// Make available to the browser window for initialization

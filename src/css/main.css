@@ -30,10 +30,7 @@ html {
 body {
   width:100%;
   margin:0; padding:0;
-}
-
-input, button, body {
-  color: #000000;
+	color: #000000;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
@@ -45,6 +42,12 @@ input, button {
 
 input { width: 35%; }
 button { width: 15%; }
+.loader {
+	width:30px;
+	height:30px;
+	top:8px;
+	position: relative;
+}
 
 .container {
   position: relative;
@@ -58,8 +61,13 @@ button { width: 15%; }
   margin-bottom:2em;
 }
 
-h1,h2,p { color: #000; margin: 0; padding:0;}
+h1,h2,p { color: #000; margin:0; padding:0; line-height: 1.2em; }
+h1 { font-size: 18pt; }
+h2 { font-size: 14pt; }
+p { font-size: 12pt; }
+
 nav { padding: 1em; }
+
 
 .stream-img {
   float: left;
@@ -74,9 +82,8 @@ ul {
   margin: 0;
   padding: 0;
 }
-
 li {
-  display: inline;
+	display: inline;
 }
 
 #results-controls {
@@ -104,4 +111,8 @@ li {
 	padding: 1em 0;
 	margin: 0 0 1em 0;
 	clear: both;
+}
+
+#results {
+	padding-bottom: 2em;
 }
