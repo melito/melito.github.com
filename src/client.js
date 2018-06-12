@@ -15,7 +15,7 @@ var routes = {
  * @return {Object}  New 'App' with default state (empty result set)
  */
 function App(dom) {
-  this.state = { results: null }
+  this.state = { results: null, current_page: null }
   if (typeof dom !== 'undefined') { this.dom = dom }
   else { this.dom = document }
 }
@@ -39,12 +39,41 @@ App.prototype.search = function(query) {
  */
 App.prototype._fetched = function(data) {
   console.log(data)
-  this.state.results = data
+  this.state.results      = data
+  this.state.current_page = 1
   if (this.state.results) {
     this._updateUI(this.state.results)
   }
 }
 
+/**
+ * App.prototype._updateUI - Called when the app should update it user interface
+ *
+ */
+App.prototype._updateUI = function(results) {
+  addTotalCount(results)
+  addPagingControls(results, this.state.current_page)
+  document.getElementById('results').innerHTML = results.streams.map(_build_result).join('')
+}
+
+var addTotalCount = function(results) {
+  document.getElementById('results-controls').innerHTML = `<span class='total-results'>Total ${results._total}</span>`
+}
+
+var addPagingControls = function(results, current_page) {
+  var node        = document.createElement("span")
+  node.className  = 'paging-controls'
+  node.innerHTML  = `${buildPageLink('prev')} ${current_page}/${page_count(results._total)} ${buildPageLink('next')}`
+  document.getElementById('results-controls').appendChild(node)
+}
+
+var buildPageLink = function(direction, link) {
+  if (direction == 'prev') {
+    return `<a href='#'>&#8678;</a>`
+  } else {
+    return `<a href='#'>&#8680;</a>`
+  }
+}
 
 /**
  * var page_count - Calculates the number of pages in a result set
@@ -102,26 +131,6 @@ var _build_result = function(stream) {
     <p>${stream.channel.status}</p>
   </div>`
   return template
-}
-
-/**
- * App.prototype._updateUI - Called when the app should update it user interface
- *
- */
-App.prototype._updateUI = function(results) {
-  addTotalCount(results)
-  addPagingControls(results)
-  document.getElementById('results').innerHTML = results.streams.map(_build_result).join('')
-}
-
-var addTotalCount = function(results) {
-  document.getElementById('results-controls').innerHTML = `<p>Total ${results._total}</p>`
-}
-
-var addPagingControls = function(results) {
-  var node        = document.createElement("span")
-  node.innerHTML  = `<span>&#8678; hi &#8680;</span>`
-  document.getElementById('results-controls').appendChild(node)
 }
 
 /**
