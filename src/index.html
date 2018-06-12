@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>jitters - browse twitch streams</title>
+    <link rel="stylesheet" href="./css/main.css">
+  </head>
+  <body>
+
+    <div class="container">
+      <nav>
+        <form class="search">
+          <ul>
+            <li><input type="text" name="search" value="" placeholder="Search query..."></li>
+            <li><button type="button" name="submit">Search</button></li>
+          </ul>
+        </form>
+      </nav>
+
+      <div id='results-controls'>
+      </div>
+
+      <div id="results">
+
+      </div>
+    </div>
+
+    <script src="./client.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      (function() {
+        window.jitters  = new App();
+        window.jitters.search('Starcraft')
+      })()
+    </script>
+  </body>
+</html>
