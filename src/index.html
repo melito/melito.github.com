@@ -5,19 +5,17 @@
     <meta charset="utf-8">
     <title>jitters - browse twitch streams</title>
     <link rel="stylesheet" href="./css/main.css">
+    <link rel="stylesheet" href="./css/groovy.css">
   </head>
   <body>
 
     <div class="container">
       <nav>
-        <form class="search">
-          <ul>
-            <li><input type="text" name="search" value="" placeholder="Search query..."></li>
-            <li><button type="button" name="submit">Search</button></li>
-            <li><img src='./img/double-ring.gif' class='loader' /></li>
-          </ul>
-        </form>
-
+        <ul>
+          <li><input id='search-input' type="text" name="search" value="" placeholder="Search query..."></li>
+          <li><button id='submit' type="button" name="submit">Search</button></li>
+          <li><img src='./img/double-ring.gif' class='loader' /></li>
+        </ul>
       </nav>
 
       <div id='results-controls'>

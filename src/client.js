@@ -26,6 +26,33 @@ function App(dom, cb_signature) {
 
   if (typeof dom !== 'undefined') { this.dom = dom }
   else { this.dom = document }
+
+  configureForm(this)
+}
+
+var configureForm = function(app) {
+
+  var checkAndSubmit = function(app) {
+    var value = app.dom.getElementById('search-input').value
+    if (!value.isEmpty()) {
+      app.search(value)
+    }
+  }
+
+  app.dom.getElementById('submit').addEventListener('click', function() {
+    checkAndSubmit(app)
+  })
+
+  app.dom.getElementById('search-input').addEventListener('keyup', function(e) {
+    e.preventDefault()
+    if (event.keyCode === 13) {
+      checkAndSubmit(app)
+    }
+  })
+}
+
+String.prototype.isEmpty = function() {
+    return (this.length === 0 || !this.trim());
 }
 
 /**
@@ -261,7 +288,7 @@ var image_url = function(stream) {
 var build_result = function(stream) {
   var template =
   `<div class="result">
-    <img class='stream-img' src="${image_url(stream)}"/><h1>${stream.game}</h1>
+    <img class='stream-img' src="${image_url(stream)}"/><h1>${stream.channel.display_name}</h1>
     <h2>${stream.game} - ${stream.viewers} Viewers</h2>
     <p>${stream.channel.status}</p>
   </div>`
