@@ -11,14 +11,18 @@ var routes = {
 
 /**
  * App - Main 'App' Object
- * @param  {Object} dom Defaults to `document` if not provided.  Allows for mocking/stubbing
+ * @param  {Object} dom          Defaults to `document` if not provided.  Allows for mocking/stubbing
+ * @param  {String} cb_signature Defaults to `window.jitters._fetched`.  This is the callback name we send to the api
  * @return {Object}  New 'App' with default state (empty result set)
  */
-function App(dom) {
+function App(dom, cb_signature) {
   this.default_timeout = 5000
   this.state = { results: null,
-            current_page: null,
-         current_request: null }
+         current_request: null,
+            current_page: null }
+
+  if (typeof cb_signature !== 'undefined') { this.cb_signature = cb_signature }
+  else { this.cb_signature = 'window.jitters._fetched' }
 
   if (typeof dom !== 'undefined') { this.dom = dom }
   else { this.dom = document }
@@ -30,7 +34,9 @@ function App(dom) {
  * @param  {String} query A string describing what you're searching for
  */
 App.prototype.search = function(query) {
-  var url    = url_for('search', {q: query, client_id: client_id, callback: 'window.jitters._fetched'})
+  var url    = url_for('search', {q: query,
+                          client_id: client_id,
+                           callback: this.cb_signature})
   this._fetch(url)
 }
 
@@ -46,6 +52,9 @@ App.prototype._fetch = function(url) {
   this.error        = null
 
   var skript        = this.dom.createElement('script')
+  if (!url.includes("client_id")) { url = url + `&client_id=${client_id}` }
+  if (!url.includes("callback")) { url = url + `&callback=${this.cb_signature}` }
+
   skript.src        = url
   skript.id         = string_to_hash(url)
   this.dom.body.appendChild(skript)
@@ -70,6 +79,20 @@ var handleTimeoutForRequest = function(app, url) {
 }
 
 /**
+ * var setLoaderVisibility - Function that explicitly sets the state of the loader
+ *
+ * @param  {Object} dom        Object used to represent the DOM
+ * @param  {Boolean} visibility Whether the loader should be hidden or not
+ */
+var setLoaderVisibility = function(dom, visibility) {
+  var elems = dom.getElementsByClassName('loader')
+  var state = visibility == true ? 'visible' : 'hidden'
+  for (var i = 0; i < elems.length; i++) {
+    elems[i].style.visibility = state
+  }
+}
+
+/**
  * App.prototype._removeRequestForID - Remove the script element responsible for making a JSONP request.
  *                                     This happens when a request has timed out and should cancel it.
  *
@@ -88,7 +111,6 @@ App.prototype._removeRequestForID = function(request_id) {
 App.prototype._fetched = function(data) {
   console.log(data)
   this.state.results          = data
-  this.state.current_page     = 1
   this.state.current_request  = null
   this.error                  = null
   if (this.state.results) {
@@ -102,12 +124,21 @@ App.prototype._fetched = function(data) {
  *
  */
 App.prototype._updateUI = function(results) {
-  addTotalCount(this.dom, results)
-  addPagingControls(this.dom, results, this.state.current_page)
-  addResults(this.dom, results)
   if (this.error) {
     var elem = this.dom.getElementById('results')
     if (elem) { elem.innerHTML = error_template(this.error) }
+  } else {
+    if (!this.state.current_page) { this.state.current_page = 1  }
+
+    addTotalCount(this.dom, results)
+    addPagingControls(this.dom, results, this.state.current_page)
+    addResults(this.dom, results)
+  }
+}
+
+var addResults = function(dom, results) {
+  if (results.streams && results.streams.length > 0) {
+      dom.getElementById('results').innerHTML = results.streams.map(build_result).join('')
   }
 }
 
@@ -121,36 +152,61 @@ var addPagingControls = function(dom, results, current_page) {
   if (results._total) {
     var node        = document.createElement("span")
     node.className  = 'paging-controls'
-    node.innerHTML  = `${buildPageLink('prev')} ${current_page}/${page_count(results._total)} ${buildPageLink('next')}`
+    node.innerHTML  = buildPagerLinks(results._links, results._total, current_page)
     dom.getElementById('results-controls').appendChild(node)
   }
 }
 
-var addResults = function(dom, results) {
-  if (results.streams && results.streams.length > 0) {
-      dom.getElementById('results').innerHTML = results.streams.map(build_result).join('')
+var buildPagerLinks = function(links, total, current_page) {
+  var result = []
+  if (links.prev) { result.push(buildPageLink('prev')) }
+  if (links.self) { result.push(buildCurrentTotalPageInfo(current_page, total))}
+  if (links.next) {
+    if (parseOffsetFromLink(links.next) < total) {
+      result.push(buildPageLink('next'))
+    }
   }
+  return result.join(' ')
 }
 
 var buildPageLink = function(direction, link) {
   if (direction == 'prev') {
-    return `<a href='#'>&#8678;</a>`
+    return `<a href='#' onclick="window.jitters.fetch_prev()">&#8678;</a>`
   } else {
-    return `<a href='#'>&#8680;</a>`
+    return `<a href='#' onclick="window.jitters.fetch_next()">&#8680;</a>`
   }
 }
 
+var buildCurrentTotalPageInfo = function(current_page, total) {
+  var template = `${current_page}/${page_count(total)}`
+  return template
+}
+
+var parseOffsetFromLink = function(link) {
+  var matches = link.match(/offset=(\d+)/)
+  if (matches && matches.length > 0) {
+    return parseInt(matches[1])
+  }
+  return null
+}
+
 /**
- * var setLoaderVisibility - Function that explicitly sets the state of the loader
+ * App.prototype.fetch_next - Proceed to the next page
  *
- * @param  {Object} dom        Object used to represent the DOM
- * @param  {Boolean} visibility Whether the loader should be hidden or not
  */
-var setLoaderVisibility = function(dom, visibility) {
-  var elems = dom.getElementsByClassName('loader')
-  var state = visibility == true ? 'visible' : 'hidden'
-  for (var i = 0; i < elems.length; i++) {
-    elems[i].style.visibility = state
+App.prototype.fetch_next = function() {
+  var results = this.state.results
+  this.state.current_page += 1
+  if (results && results._links && results._links.next) {
+    this._fetch(results._links.next)
+  }
+}
+
+App.prototype.fetch_prev = function() {
+  var results = this.state.results
+  this.state.current_page += 1
+  if (results && results._links && results._links.prev) {
+    this._fetch(results._links.prev)
   }
 }
 
@@ -164,7 +220,7 @@ var setLoaderVisibility = function(dom, visibility) {
 var page_count = function(results, per_page) {
   if (!per_page) { per_page = 10 }
   var result = results/per_page
-  if (results % per_page) { return Math.floor(result)+1 }
+  if (results % per_page) { return Math.floor(result) + 1 }
   else { return result }
 }
 
@@ -283,8 +339,8 @@ var string_to_hash = function(str) {
 
   for (var i = 0; i < str.length; i++) {
     var char = str.charCodeAt(i)
-    hash = (hash<<5)-char
-    hash = hash + hash
+    hash     = (hash << 5) - char
+    hash     = hash + hash
   }
   return hash.toString()
 }
@@ -295,7 +351,9 @@ module.exports = {
   url_for: url_for,
   image_url: image_url,
   page_count: page_count,
-  string_to_hash: string_to_hash
+  string_to_hash: string_to_hash,
+  buildPagerLinks: buildPagerLinks,
+  parseOffsetFromLink: parseOffsetFromLink,
 }
 
 /// Make available to the browser window for initialization

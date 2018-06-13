@@ -26,9 +26,13 @@ FakeDom.prototype.remove = function() { }
 var dom = new FakeDom()
 var app = new client.App(dom)
 var stream = {
-  preview: {
-    template: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_rotterdam08-{width}x{height}.jpg'
-  }
+  preview: { template: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_rotterdam08-{width}x{height}.jpg' }
+}
+
+var links = {
+  next: "https://api.twitch.tv/kraken/search/streams?limit=10&offset=120&q=Starcraft",
+  prev: "https://api.twitch.tv/kraken/search/streams?limit=10&offset=100&q=Starcraft",
+  self: "https://api.twitch.tv/kraken/search/streams?limit=10&offset=110&q=Starcraft"
 }
 
 //////// Tests
@@ -58,6 +62,14 @@ test('that we can calulate the number of pages in a result set', function(t){
   t.equals(client.page_count(122), 13, "122 results should be 13 pages")
 })
 
+test('that we can parse an offset out of a link', function(t) {
+  t.plan(4)
+  t.equals(110, client.parseOffsetFromLink('https://api.twitch.tv/kraken/search/streams?limit=10&offset=110&q=Starcraft'))
+  t.equals(1, client.parseOffsetFromLink('https://api.twitch.tv/kraken/search/streams?limit=10&offset=1&q=Starcraft'))
+  t.equals(300, client.parseOffsetFromLink('https://api.twitch.tv/kraken/search/streams?limit=10&offset=300&q=Starcraft'))
+  t.equals(30000, client.parseOffsetFromLink('https://api.twitch.tv/kraken/search/streams?limit=10&offset=30000&q=Starcraft'))
+})
+
 test('that we have a simple hashing function for identifying inflight requests', function(t){
   t.plan(3)
   t.equals(client.string_to_hash('https://www.google.com'), '-3413940314', 'should build expected hash')
@@ -67,7 +79,7 @@ test('that we have a simple hashing function for identifying inflight requests',
 
 test('that we can create an app object and verify its default state', function(t){
   t.plan(3)
-  t.deepEqual(app.state, {results: null, current_page: null, current_request: null}, 'should have blank state')
+  t.deepEqual(app.state, {results: null, current_request: null, current_page: null}, 'should have blank state')
   t.deepEqual(app.dom, dom, 'should have a dom set')
   t.equals(app.default_timeout, 5000, 'should have a default_timeout for requests')
 })
@@ -84,9 +96,15 @@ test('that we can create requests and manage their state', function(t) {
 
   t.ok(app.state.current_request, 'should have request queued')
   t.ok(dom.body.script, 'should have appended the script element to kick off the request')
-  t.equals(dom.body.script.id, '-3440712522', 'script element should have an id')
+  t.equals(dom.body.script.id, '2497367224', 'script element should have an id')
 
   setTimeout(function() {
     t.equals(app.error, 'Could not connect to api', 'should have registered an error with the app')
   }, 100)
+})
+
+test('that we can build pagination links based on what was returned in the results', function(t){
+  t.plan(1)
+  var result = client.buildPagerLinks(links)
+  t.ok(result, 'links were built')
 })
