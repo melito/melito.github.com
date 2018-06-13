@@ -13,7 +13,7 @@ var routes = {
  * App - Main 'App' Object
  * @param  {Object} dom          Defaults to `document` if not provided.  Allows for mocking/stubbing
  * @param  {String} cb_signature Defaults to `window.jitters._fetched`.  This is the callback name we send to the api
- * @return {Object}  New 'App' with default state (empty result set)
+ * @return {Object}              New 'App' with default state (empty result set)
  */
 function App(dom, cb_signature) {
   this.default_timeout = 5000
@@ -35,6 +35,7 @@ var configureForm = function(app) {
   var checkAndSubmit = function(app) {
     var value = app.dom.getElementById('search-input').value
     if (!value.isEmpty()) {
+      app.state.current_page = null
       app.search(value)
     }
   }
