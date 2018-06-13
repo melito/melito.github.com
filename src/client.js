@@ -204,7 +204,7 @@ App.prototype.fetch_next = function() {
 
 App.prototype.fetch_prev = function() {
   var results = this.state.results
-  this.state.current_page += 1
+  this.state.current_page -= 1
   if (results && results._links && results._links.prev) {
     this._fetch(results._links.prev)
   }
