@@ -15,8 +15,11 @@ var routes = {
  * @return {Object}  New 'App' with default state (empty result set)
  */
 function App(dom) {
-  this.state           = { results: null, current_page: null, current_request: null }
-  this.default_timeout = 500
+  this.default_timeout = 5000
+  this.state = { results: null,
+            current_page: null,
+         current_request: null }
+
   if (typeof dom !== 'undefined') { this.dom = dom }
   else { this.dom = document }
 }
@@ -39,18 +42,42 @@ App.prototype.search = function(query) {
  * @param  {String} url JSONP endpoint you would like to request data from
  */
 App.prototype._fetch = function(url) {
+  setLoaderVisibility(this.dom, true)
+  this.error        = null
+
   var skript        = this.dom.createElement('script')
   skript.src        = url
   skript.id         = string_to_hash(url)
-  skript.className  = 'jsonp_request'
   this.dom.body.appendChild(skript)
-  this.requests[skript.id] =  {complete: false}
+  this.state.current_request = url
 
-  var hi = this
+  /// Setup the timeout handler
+  var self = this
   setTimeout(function() {
-    this.error = 'Could not connect to api'
-    console.log(hi.requests.filter(function(x) { return x === skript.id }))
+    handleTimeoutForRequest(self, url)
   }, this.default_timeout)
+}
+
+var handleTimeoutForRequest = function(app, url) {
+  var req = app.state.current_request
+  if (req && req == url) {
+    app.error                 = 'Could not connect to api'
+    app.state.current_request = null
+    app._removeRequestForID(string_to_hash(url))
+    app._updateUI({})
+    setLoaderVisibility(app.dom, false)
+  }
+}
+
+/**
+ * App.prototype._removeRequestForID - Remove the script element responsible for making a JSONP request.
+ *                                     This happens when a request has timed out and should cancel it.
+ *
+ * @param  {String} request_id ID of the request.  This is just a hash of the url
+ */
+App.prototype._removeRequestForID = function(request_id) {
+  var requestElement = this.dom.getElementById(request_id)
+  if (requestElement) { requestElement.remove() }
 }
 
 /**
@@ -60,11 +87,14 @@ App.prototype._fetch = function(url) {
  */
 App.prototype._fetched = function(data) {
   console.log(data)
-  this.state.results      = data
-  this.state.current_page = 1
+  this.state.results          = data
+  this.state.current_page     = 1
+  this.state.current_request  = null
+  this.error                  = null
   if (this.state.results) {
     this._updateUI(this.state.results)
   }
+  setLoaderVisibility(this.dom, false)
 }
 
 /**
@@ -75,21 +105,31 @@ App.prototype._updateUI = function(results) {
   addTotalCount(this.dom, results)
   addPagingControls(this.dom, results, this.state.current_page)
   addResults(this.dom, results)
+  if (this.error) {
+    var elem = this.dom.getElementById('results')
+    if (elem) { elem.innerHTML = error_template(this.error) }
+  }
 }
 
 var addTotalCount = function(dom, results) {
-  dom.getElementById('results-controls').innerHTML = `<span class='total-results'>Total: ${results._total}</span>`
+  if (results._total) {
+    dom.getElementById('results-controls').innerHTML = `<span class='total-results'>Total: ${results._total}</span>`
+  }
 }
 
 var addPagingControls = function(dom, results, current_page) {
-  var node        = document.createElement("span")
-  node.className  = 'paging-controls'
-  node.innerHTML  = `${buildPageLink('prev')} ${current_page}/${page_count(results._total)} ${buildPageLink('next')}`
-  dom.getElementById('results-controls').appendChild(node)
+  if (results._total) {
+    var node        = document.createElement("span")
+    node.className  = 'paging-controls'
+    node.innerHTML  = `${buildPageLink('prev')} ${current_page}/${page_count(results._total)} ${buildPageLink('next')}`
+    dom.getElementById('results-controls').appendChild(node)
+  }
 }
 
 var addResults = function(dom, results) {
-  dom.getElementById('results').innerHTML = results.streams.map(build_result).join('')
+  if (results.streams && results.streams.length > 0) {
+      dom.getElementById('results').innerHTML = results.streams.map(build_result).join('')
+  }
 }
 
 var buildPageLink = function(direction, link) {
@@ -97,6 +137,20 @@ var buildPageLink = function(direction, link) {
     return `<a href='#'>&#8678;</a>`
   } else {
     return `<a href='#'>&#8680;</a>`
+  }
+}
+
+/**
+ * var setLoaderVisibility - Function that explicitly sets the state of the loader
+ *
+ * @param  {Object} dom        Object used to represent the DOM
+ * @param  {Boolean} visibility Whether the loader should be hidden or not
+ */
+var setLoaderVisibility = function(dom, visibility) {
+  var elems = dom.getElementsByClassName('loader')
+  var state = visibility == true ? 'visible' : 'hidden'
+  for (var i = 0; i < elems.length; i++) {
+    elems[i].style.visibility = state
   }
 }
 
@@ -143,7 +197,7 @@ var image_url = function(stream) {
 
 
 /**
- * build_result - This will build an html slug for use in populating a result set
+ * build_result - This will build an html partial for use in populating a result set
  *
  * @param  {Object} stream Object representing a stream.
  * @return {String}        HTML partial with populated fields
@@ -155,6 +209,24 @@ var build_result = function(stream) {
     <h2>${stream.game} - ${stream.viewers} Viewers</h2>
     <p>${stream.channel.status}</p>
   </div>`
+  return template
+}
+
+
+/**
+ * var error_template - This will build an html partial for use in populating an error message
+ *
+ * @param  {String} error_msg Message describing the error
+ * @return {String}           HTML partial with populated fields
+ */
+var error_template = function(error_msg) {
+  var template =
+  `<div class='error'>
+    <h1>Something went wrong...</h1>
+    <p>${error_msg}</p>
+    <p>Please try again.</p>
+  </div>
+  `
   return template
 }
 
@@ -198,7 +270,6 @@ UrlBuilder.prototype.build = function() {
   }
   return url
 }
-
 
 /**
  * var string_to_hash - Poorman's string hash.  Used to create a finger print for strings we can use for keying jsonp requests/state

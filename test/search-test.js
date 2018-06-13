@@ -15,6 +15,13 @@ FakeDom.prototype.createElement = function(name) {
   return new FakeElement(name)
 }
 
+FakeDom.prototype.getElementsByClassName = function(name) {
+  return []
+}
+
+FakeDom.prototype.getElementById = function(name) { }
+FakeDom.prototype.remove = function() { }
+
 /////// Variables we'll be using with some of the tests
 var dom = new FakeDom()
 var app = new client.App(dom)
@@ -62,12 +69,12 @@ test('that we can create an app object and verify its default state', function(t
   t.plan(3)
   t.deepEqual(app.state, {results: null, current_page: null, current_request: null}, 'should have blank state')
   t.deepEqual(app.dom, dom, 'should have a dom set')
-  t.equals(app.default_timeout, 500, 'should have a default_timeout for requests')
+  t.equals(app.default_timeout, 5000, 'should have a default_timeout for requests')
 })
 
 test('that we can create requests and manage their state', function(t) {
   t.plan(7)
-  app.default_time = 50
+  app.default_timeout = 50
 
   t.notOk(app.state.current_request, 'should not have a current request')
   t.notOk(dom.body.script, 'should not have a script element in the dom')
@@ -75,13 +82,11 @@ test('that we can create requests and manage their state', function(t) {
 
   app._fetch('https://api.twitch.tv/kraken/search/streams?q=rocket%20league')
 
-  t.equals(1, app.requests.length, 'should have request queued')
+  t.ok(app.state.current_request, 'should have request queued')
   t.ok(dom.body.script, 'should have appended the script element to kick off the request')
   t.equals(dom.body.script.id, '-3440712522', 'script element should have an id')
 
   setTimeout(function() {
     t.equals(app.error, 'Could not connect to api', 'should have registered an error with the app')
   }, 100)
-  //console.log(dom);
-  // We're using a fake dom so it should time out.
 })
