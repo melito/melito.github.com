@@ -7,6 +7,8 @@ FakeElement.prototype.appendChild = function(fake) {
   this[fake.name] = fake
 }
 
+FakeElement.prototype.addEventListener = function(name, fn) { }
+
 function FakeDom() {
   this.body = new FakeElement('body')
 }

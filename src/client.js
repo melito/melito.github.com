@@ -40,16 +40,22 @@ var configureForm = function(app) {
     }
   }
 
-  app.dom.getElementById('submit').addEventListener('click', function() {
-    checkAndSubmit(app)
-  })
-
-  app.dom.getElementById('search-input').addEventListener('keyup', function(e) {
-    e.preventDefault()
-    if (event.keyCode === 13) {
+  var submitBtn = app.dom.getElementById('submit')
+  if (submitBtn) {
+    submitBtn.addEventListener('click', function() {
       checkAndSubmit(app)
-    }
-  })
+    })
+  }
+
+  var input = app.dom.getElementById('search-input')
+  if (input) {
+    input.addEventListener('keyup', function(e) {
+      e.preventDefault()
+      if (event.keyCode === 13) {
+        checkAndSubmit(app)
+      }
+    })
+  }
 }
 
 String.prototype.isEmpty = function() {
