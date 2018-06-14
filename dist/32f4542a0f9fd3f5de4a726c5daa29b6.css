@@ -1,1 +1,96 @@
-body{width:100%;margin:0;padding:0;color:#000;font-family:Helvetica Neue,Helvetica,Arial,sans-serif}button,input{font-size:12pt;padding:.5em;margin-right:.5em}input{width:35%}button{width:15%}.loader{width:30px;height:30px;top:8px;position:relative;visibility:hidden}.container{position:relative;overflow:auto;background:#fff;border:1px solid #000;width:75%;left:50%;margin-left:-35.2%;margin-top:2em;margin-bottom:2em}h1,h2,p{color:#000;margin:0;padding:0;line-height:1.2em}h1{font-size:18pt}h2{font-size:14pt}p{font-size:12pt}nav{padding:1em}.stream-img{float:left;margin:0 1em;border:1px solid #000;width:125px;height:125px}ul{list-style:none;margin:0;padding:0}li{display:inline}#results-controls{line-height:38px;border-top:1px solid #000}.total-results{padding-left:1em;float:left;clear:none}.paging-controls{padding-right:2em;float:right;clear:right}.paging-controls a{text-decoration:none}.result{padding:1em 0;margin:0 0 1em;clear:both}#results{padding-bottom:2em}.error{margin:1em;padding:1em;text-align:center}
+body {
+  width:100%;
+  margin:0; padding:0;
+	color: #000000;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+input, button {
+  font-size: 12pt;
+  padding:.5em;
+  margin-right:.5em;
+}
+
+input { width: 35%; }
+button { width: 15%; }
+
+.loader {
+	width:30px;
+	height:30px;
+	top:8px;
+	position: relative;
+	visibility: hidden;
+}
+
+.container {
+  position: relative;
+  overflow: auto;
+  background:#fff;
+  border:1px solid #000;
+  width:75%;
+  left:50%;
+  margin-left:-35.2%;
+  margin-top:2em;
+  margin-bottom:2em;
+}
+
+h1,h2,p { color: #000; margin:0; padding:0; line-height: 1.2em; }
+h1 { font-size: 18pt; }
+h2 { font-size: 14pt; }
+p { font-size: 12pt; }
+
+nav { padding: 1em; }
+
+.stream-img {
+  float: left;
+  margin: 0 1em;
+  border: 1px solid #000;
+  width: 125px;
+  height: 125px;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+li {
+	display: inline;
+}
+
+#results-controls {
+	line-height: 38px;
+	border-top: 1px solid #000;
+}
+
+.total-results {
+	padding-left: 1em;
+	float: left;
+	clear: none;
+}
+
+.paging-controls {
+	padding-right: 2em;
+	float: right;
+	clear: right;
+}
+
+.paging-controls a {
+	text-decoration: none;
+}
+
+.result {
+	padding: 1em 0;
+	margin: 0 0 1em 0;
+	clear: both;
+}
+
+#results {
+	padding-bottom: 2em;
+}
+
+.error {
+	margin:1em;
+	padding:1em;
+	text-align: center;
+}

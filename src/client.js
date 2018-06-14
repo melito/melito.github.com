@@ -30,8 +30,15 @@ function App(dom, cb_signature) {
   configureForm(this)
 }
 
+
+/**
+ * var configureForm - Used to configure the search form after the App is initalized
+ *
+ * @param  {App} app The app injects itself as an argument here
+ */
 var configureForm = function(app) {
 
+  /// Function for validating input and executing the search
   var checkAndSubmit = function(app) {
     var value = app.dom.getElementById('search-input').value
     if (!value.isEmpty()) {
@@ -40,6 +47,7 @@ var configureForm = function(app) {
     }
   }
 
+  /// Bind click events to the submit button
   var submitBtn = app.dom.getElementById('submit')
   if (submitBtn) {
     submitBtn.addEventListener('click', function() {
@@ -47,6 +55,7 @@ var configureForm = function(app) {
     })
   }
 
+  /// Bind 'enter' events to the search input
   var input = app.dom.getElementById('search-input')
   if (input) {
     input.addEventListener('keyup', function(e) {
@@ -58,6 +67,12 @@ var configureForm = function(app) {
   }
 }
 
+
+/**
+ * String.prototype.isEmpty - Prototype for checking for empty/blank strings
+ *
+ * @return {Boolean}  Is the string blank or not?
+ */
 String.prototype.isEmpty = function() {
     return (this.length === 0 || !this.trim());
 }
@@ -101,6 +116,17 @@ App.prototype._fetch = function(url) {
   }, this.default_timeout)
 }
 
+
+/**
+ * var handleTimeoutForRequest - Timeout handler.
+ *                               JSONP is fickle with error handling so we have
+ *                               a timeout that we use to check if a request has
+ *                               completed or not in a reasonable amount of time.
+ *
+ * @param  {type} app description
+ * @param  {type} url description
+ * @return {type}     description
+ */
 var handleTimeoutForRequest = function(app, url) {
   var req = app.state.current_request
   if (req && req == url) {
@@ -143,12 +169,19 @@ App.prototype._removeRequestForID = function(request_id) {
  * @param  {Object} data Results from the API. (https://dev.twitch.tv/docs/v5/reference/search/#search-streams)
  */
 App.prototype._fetched = function(data) {
-  console.log(data)
   this.state.results          = data
   this.state.current_request  = null
   this.error                  = null
   if (this.state.results) {
-    this._updateUI(this.state.results)
+    if (this.state.results._total > 0) {
+      this._updateUI(this.state.results)
+    } else {
+      var elem = this.dom.getElementById('results')
+      if (elem) { elem.innerHTML = error_template("Your search had no results.") }
+
+      elem = this.dom.getElementById('results-controls')
+      if (elem) { elem.innerHTML = "" }
+    }
   }
   setLoaderVisibility(this.dom, false)
 }
@@ -170,18 +203,40 @@ App.prototype._updateUI = function(results) {
   }
 }
 
+
+/**
+ * var addResults - Takes an array of results and appends them to a section of the DOM
+ *
+ * @param  {Object} dom    This can be the document or any object you're using as a stub
+ * @param  {Object} results An object returned by the twitch api
+ */
 var addResults = function(dom, results) {
   if (results.streams && results.streams.length > 0) {
       dom.getElementById('results').innerHTML = results.streams.map(build_result).join('')
   }
 }
 
+
+/**
+ * var addTotalCount - Updates the total count of results in the UI
+ *
+ * @param  {Object} dom     This can be the document or any object you're using as a stub
+ * @param  {Object} results An object returned by the twitch api
+ */
 var addTotalCount = function(dom, results) {
   if (results._total) {
     dom.getElementById('results-controls').innerHTML = `<span class='total-results'>Total: ${results._total}</span>`
   }
 }
 
+
+/**
+ * var addPagingControls - Builds the DOM element containing pagination controls
+ *
+ * @param  {Object}  dom          This can be the document or any object you're using as a stub
+ * @param  {Object}  results      An object returned by the twitch api
+ * @param  {Integer} current_page A number representing the current page we're on
+ */
 var addPagingControls = function(dom, results, current_page) {
   if (results._total) {
     var node        = document.createElement("span")
@@ -191,6 +246,14 @@ var addPagingControls = function(dom, results, current_page) {
   }
 }
 
+
+/**
+ * var buildPagerLinks - Checks the links object in the results to build appropriate paging controls
+ *
+ * @param  {Object} links      links object found in the response from the API
+ * @param  {Integer} total     Number representing ALL the results twitch has for this query
+ * @param  {Integer} current_page Current Page number we're on
+ */
 var buildPagerLinks = function(links, total, current_page) {
   var result = []
   if (links.prev) { result.push(buildPageLink('prev')) }
@@ -203,6 +266,14 @@ var buildPagerLinks = function(links, total, current_page) {
   return result.join(' ')
 }
 
+
+/**
+ * var buildPageLink - Builds an html link used for querying the
+ *
+ * @param  {type} direction description
+ * @param  {type} link      description
+ * @return {type}           description
+ */
 var buildPageLink = function(direction, link) {
   if (direction == 'prev') {
     return `<a href='#' onclick="window.jitters.fetch_prev()">&#8678;</a>`
@@ -211,11 +282,26 @@ var buildPageLink = function(direction, link) {
   }
 }
 
+
+/**
+ * var buildCurrentTotalPageInfo - Builds a string for use in displaying the page info
+ *
+ * @param  {Integer} current_page Page of results the user is currently on
+ * @param  {Integer} total        Number of pages total
+ * @return {String}               String following format: `1/12`
+ */
 var buildCurrentTotalPageInfo = function(current_page, total) {
   var template = `${current_page}/${page_count(total)}`
   return template
 }
 
+
+/**
+ * var parseOffsetFromLink - Pulls the offset number out of a link
+ *
+ * @param  {String} link URL on the twitch api that possible contains an offset query param
+ * @return {Integer}     If param is present returns the integer for it, otherwise null
+ */
 var parseOffsetFromLink = function(link) {
   var matches = link.match(/offset=(\d+)/)
   if (matches && matches.length > 0) {
@@ -229,17 +315,31 @@ var parseOffsetFromLink = function(link) {
  *
  */
 App.prototype.fetch_next = function() {
-  var results = this.state.results
-  this.state.current_page += 1
-  if (results && results._links && results._links.next) {
-    this._fetch(results._links.next)
-  }
+  this.fetch_page('next')
 }
 
+
+/**
+ * App.prototype.fetch_prev - Proceed to the previous page
+ *
+ */
 App.prototype.fetch_prev = function() {
+  this.fetch_page('prev')
+}
+
+
+/**
+ * App - Used to make page fetch requests
+ *
+ * @param  {String} direction 'next' or 'prev'
+ */
+App.prototype.fetch_page = function(direction) {
   var results = this.state.results
-  this.state.current_page -= 1
-  if (results && results._links && results._links.prev) {
+  if (direction == 'next') {
+    this.state.current_page += 1
+    this._fetch(results._links.next)
+  } else {
+    this.state.current_page -= 1
     this._fetch(results._links.prev)
   }
 }
