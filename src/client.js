@@ -170,17 +170,14 @@ App.prototype._removeRequestForID = function(request_id) {
  */
 App.prototype._fetched = function(data) {
   this.state.results          = data
+  this._removeRequestForID(string_to_hash(this.state.current_request))
   this.state.current_request  = null
   this.error                  = null
   if (this.state.results) {
     if (this.state.results._total > 0) {
       this._updateUI(this.state.results)
     } else {
-      var elem = this.dom.getElementById('results')
-      if (elem) { elem.innerHTML = error_template("Your search had no results.") }
-
-      elem = this.dom.getElementById('results-controls')
-      if (elem) { elem.innerHTML = "" }
+      showError(this.dom, 'Your search had no results.')
     }
   }
   setLoaderVisibility(this.dom, false)
@@ -192,8 +189,7 @@ App.prototype._fetched = function(data) {
  */
 App.prototype._updateUI = function(results) {
   if (this.error) {
-    var elem = this.dom.getElementById('results')
-    if (elem) { elem.innerHTML = error_template(this.error) }
+    showError(this.dom, this.error)
   } else {
     if (!this.state.current_page) { this.state.current_page = 1  }
 
@@ -203,6 +199,13 @@ App.prototype._updateUI = function(results) {
   }
 }
 
+var showError = function(dom, errorMsg) {
+  var elem = dom.getElementById('results')
+  if (elem) { elem.innerHTML = error_template(errorMsg) }
+
+  elem = dom.getElementById('results-controls')
+  if (elem) { elem.innerHTML = "" }
+}
 
 /**
  * var addResults - Takes an array of results and appends them to a section of the DOM
