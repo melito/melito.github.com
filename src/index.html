@@ -2,28 +2,36 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
   <head>
-    <meta charset="utf-8">
     <title>jitters - browse twitch streams</title>
     <link rel="stylesheet" href="./css/main.css">
     <link rel="stylesheet" href="./css/groovy.css">
+
+    <meta charset="utf-8">
+    <meta name="theme-color" content="#13599a"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   </head>
   <body>
-
-    <div class="container">
-      <nav>
+    <div class="container col-cool">
+      <nav class='col-12'>
         <ul>
-          <li><input id='search-input' type="text" name="search" value="" placeholder="Search query..."></li>
-          <li><button id='submit' type="button" name="submit">Search</button></li>
+          <li>
+            <input id='search-input' class='col-6' type="text" name="search" value="" placeholder="Search query...">
+          </li>
+          <li>
+            <button id='submit' class='col-4' type="button" name="submit">Search</button>
+          </li>
           <li><img src='./img/double-ring.gif' class='loader' /></li>
         </ul>
       </nav>
 
-      <div id='results-controls'>
+      <div class="row">
+        <div id='results-controls' class='col-12'>
+        </div>
       </div>
 
-      <div id="results">
+      <div id="results" class='col-12'>
       </div>
-
     </div>
 
     <script src="./client.js" charset="utf-8"></script>

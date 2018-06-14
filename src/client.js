@@ -381,8 +381,8 @@ var url_for = function(query_type, params) {
  */
 var image_url = function(stream) {
   if (stream.preview.template) {
-    var result  = stream.preview.template.replace("{width}", 125)
-    result      = result.replace("{height}", 125)
+    var result  = stream.preview.template.replace("{width}", 200)
+    result      = result.replace("{height}", 200)
     return result
   }
   return "http://via.placeholder.com/125x125"
@@ -397,10 +397,13 @@ var image_url = function(stream) {
  */
 var build_result = function(stream) {
   var template =
-  `<div class="result">
-    <img class='stream-img' src="${image_url(stream)}"/><h1>${stream.channel.display_name}</h1>
-    <h2>${stream.game} - ${stream.viewers} Viewers</h2>
-    <p>${stream.channel.status}</p>
+  `<div class="result row">
+    <img class='stream-img col-3' src="${image_url(stream)}"/>
+    <div class='col-9'>
+      <h1>${stream.channel.display_name}</h1>
+      <h2>${stream.game} - ${stream.viewers} Viewers</h2>
+      <p>${stream.channel.status}</p>
+    </div>
   </div>`
   return template
 }
