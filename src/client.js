@@ -85,6 +85,7 @@ String.prototype.isEmpty = function() {
 App.prototype.search = function(query) {
   var url    = url_for('search', {q: query,
                           client_id: client_id,
+                                hls: true,
                            callback: this.cb_signature})
   this._fetch(url)
 }
