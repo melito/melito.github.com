@@ -349,8 +349,13 @@ App.prototype.fetch_page = function(direction) {
 }
 
 App.prototype.fetch_stream = function(streamID) {
-  var stream = this.state.results.streams.filter(function(stream) { return streamID == stream._id })
   console.log(stream)
+  var stream = this.state.results.streams.filter(function(stream) { return streamID == stream._id })
+  if (stream) {
+    if (stream._links.self) {
+      this._fetch(results._links.next)
+    }
+  }
 }
 
 /**
