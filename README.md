@@ -31,7 +31,7 @@ $ cd melito.github.com
 $ npm install
 ```
 
-Using [parcel](https://parceljs.org/) you can either build for deployment and development.
+Using [parcel](https://parceljs.org/) you can either build for deployment or development.
 
 For development
 ```
