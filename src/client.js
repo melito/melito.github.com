@@ -348,6 +348,11 @@ App.prototype.fetch_page = function(direction) {
   }
 }
 
+App.prototype.fetch_stream = function(streamID) {
+  var stream = this.state.results.streams.filter(function(stream) { return streamID == stream._id })
+  console.log(stream)
+}
+
 /**
  * var page_count - Calculates the number of pages in a result set
  *
@@ -399,7 +404,7 @@ var image_url = function(stream) {
 var build_result = function(stream) {
   var template =
   `<div class="result row">
-    <img class='stream-img col-3' src="${image_url(stream)}"/>
+    <img class='stream-img col-3' src="${image_url(stream)}" onclick="window.jitters.fetch_stream(${stream._id})"/>
     <div class='col-9'>
       <h1>${stream.channel.display_name}</h1>
       <h2>${stream.game} - ${stream.viewers} Viewers</h2>
